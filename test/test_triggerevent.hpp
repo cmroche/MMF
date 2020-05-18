@@ -10,7 +10,7 @@ void should_fire_event_when_ticked(void)
 {
     auto fire = false;
     TriggerEvent<mock_millis> te(TRIGGER_EVENT_TIME, [](void* p)
-    { 
+    {
         *((bool*)p) = true;
     }, &fire);
 
@@ -40,6 +40,7 @@ void should_keep_firing_events_when_ticked(void)
 
 void RUN_TRIGGEREVENT_TESTS()
 {
+    Serial.write("Start TRIGGEREVENT unit tests\n");
     RUN_TEST(should_fire_event_when_ticked);
     RUN_TEST(should_keep_firing_events_when_ticked);
 }

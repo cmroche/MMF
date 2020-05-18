@@ -7,11 +7,11 @@
 
 #include "test_util.hpp"
 
-AF_Stepper _testStepper(STEPPER_STEPS, STEPPER_PORT);
+//AF_Stepper _testStepper(STEPPER_STEPS, STEPPER_PORT);
 
 void should_feed_when_event_triggered(void) 
 {
-    Feeder fe(_testStepper);
+    Feeder fe; //(/*_testStepper*/);
     TriggerEvent<mock_millis> te(TRIGGER_EVENT_TIME, [](void* p){
         const auto feeder = (Feeder*)p;
         feeder->Feed();
@@ -27,7 +27,7 @@ void should_feed_when_event_triggered(void)
 
 void RUN_FEEDER_TESTS()
 {
-    _testStepper.setSpeed(STEPPER_RPM);
+    //_testStepper.setSpeed(STEPPER_RPM);
 
     RUN_TEST(should_feed_when_event_triggered);
 }

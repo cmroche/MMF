@@ -1,7 +1,6 @@
 #ifndef UNIT_TEST
 
 #include <Arduino.h>
-#include <AFMotor.h>
 #include <timer.h>
 
 #include "triggerevent.h"
@@ -15,6 +14,10 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  digitalWrite(13, HIGH);
+  delay(100);
+  digitalWrite(13, LOW);
+  delay(500);
 }
 
 #endif

@@ -1,7 +1,7 @@
 #pragma once
 
 
-unsigned long mock_cpu_ticks = 0;
+unsigned long mock_cpu_ticks = 60L * 60L * 1000L;
 
 void mock_millis_elapse(unsigned long ms)
 {

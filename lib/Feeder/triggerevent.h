@@ -19,7 +19,7 @@ private:
     void* _opaque = nullptr;
     handler_t _cb = nullptr;
 
-    typedef Timer<1, time_func> TimerType;
+    typedef Timer<TIMER_MAX_TASKS, time_func> TimerType;
     TimerType _timer;
     typename TimerType::Task _task;
 };

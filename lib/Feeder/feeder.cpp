@@ -1,7 +1,7 @@
 #include "feeder.h"
 
-Feeder::Feeder(AF_Stepper& stepper)
-: _stepper(stepper)
+Feeder::Feeder(/*AF_Stepper& stepper*/)
+//: _stepper(stepper)
 {
     // Nothing else to do here, we assume the stepper is already initialized and functional
 }
