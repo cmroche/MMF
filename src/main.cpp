@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <timer.h>
 
-#include "triggerevent.h"
+#include "timetriggerevent.h"
 
 // Example: https://create.arduino.cc/projecthub/electropeak/arduino-l293d-motor-driver-shield-tutorial-c1ac9b
 // Arduino-timer: https://github.com/contrem/arduino-timer
@@ -18,6 +18,9 @@ void loop() {
   delay(100);
   digitalWrite(13, LOW);
   delay(500);
+
+  // Need to confirm that this will be supported
+  // ESP.deepSleep(10e6);
 }
 
 #endif

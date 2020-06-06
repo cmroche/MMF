@@ -1,12 +1,17 @@
 #include <unity.h>
+#include <TimeLib.h>
 
-#include "test_triggerevent.hpp"
+#include "test_timetriggerevent.hpp"
+#include "test_mqtttriggerevent.hpp"
 #include "test_feeder.hpp"
 
 void process()
 {
+    setTime(0, 0, 1, 1, 1, 2000); //h, m, s, d, m, y
+
     UNITY_BEGIN();
-    RUN_TRIGGEREVENT_TESTS();
+    RUN_TIMETRIGGEREVENT_TESTS();
+    RUN_MQTTTRIGGEREVENT_TESTS();
     RUN_FEEDER_TESTS();
     UNITY_END();
 }
@@ -20,11 +25,7 @@ void setup()
 
 void loop() 
 {
-    // Don't like testing with a loop...
-    digitalWrite(13, HIGH);
-    delay(100);
-    digitalWrite(13, LOW);
-    delay(500);
+
 }
 #else
 int main(int argc, char **argv) {

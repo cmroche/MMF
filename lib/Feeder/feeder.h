@@ -8,10 +8,6 @@ private:
 
 public:
     Feeder(/*AF_Stepper& stepper*/);
-    ~Feeder() = default;
-
-    Feeder(const Feeder&) = delete;
-    Feeder(Feeder&&) = default;
 
     void Feed();
     unsigned long GetFeedCount() const { return _feedCount; }

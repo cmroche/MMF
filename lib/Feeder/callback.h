@@ -1,22 +1,20 @@
 #pragma once
 
-#define RESET_TIME setTime(0, 0, 0, 1, 1, 2000)
-#define SET_MORNING_TRIGGER_TIME setTime(8, 0, 0, 1, 1, 2000)
-#define SET_EVENING_TRIGGER_TIME setTime(18, 0, 0, 1, 1, 2000)
+// template <typename T>
+// struct Callback;
 
-unsigned long mock_cpu_ticks = 60L * 60L * 1000L;
+// template <typename Ret, typename... Params>
+// struct Callback<Ret(Params...)> {
+//    template <typename... Args> 
+//    static Ret callback(Args... args) {                    
+//       return func(args...);  
+//    }
+//    static std::function<Ret(Params...)> func; 
+// };
 
-void mock_millis_elapse(unsigned long ms)
-{
-    mock_cpu_ticks += ms;
-}
+// template <typename Ret, typename... Params>
+// std::function<Ret(Params...)> Callback<Ret(Params...)>::func;
 
-unsigned long mock_millis()
-{
-    return mock_cpu_ticks;
-}
-
-// Callback helper
 template<typename T>
 struct ActualType {
     typedef T type;
@@ -50,3 +48,5 @@ template<typename Ret, typename ... Params, unsigned int n,typename CallerType>
 std::function<Ret(Params...)> Callback<Ret(Params...), n,CallerType>::func;
 
 #define GETCB(ptrtype,callertype) Callback<ActualType<ptrtype>::type,__COUNTER__,callertype>::getCallback
+
+// USE: GETCB(cb_type, testfunc)(std::bind(&testfunc::test, tf, std::placeholders::_2));
