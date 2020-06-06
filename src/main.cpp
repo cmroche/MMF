@@ -1,25 +1,48 @@
 #ifndef UNIT_TEST
 
 #include <Arduino.h>
-#include <timer.h>
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+#include <NTPClient.h>
 
+#include "appconfig.h"
 #include "timetriggerevent.h"
+#include "mqtttriggerevent.h"
+#include "feeder.h"
 
-// Example: https://create.arduino.cc/projecthub/electropeak/arduino-l293d-motor-driver-shield-tutorial-c1ac9b
-// Arduino-timer: https://github.com/contrem/arduino-timer
+WiFiUDP udpClient;
 
-void setup() {
-  // put your setup code here, to run once:
+// -5H for Eastern Time, we could adjust the offset automatically in the future
+NTPClient ntpClient(udpClient, "http://www.pool.ntp.org/zone/north-america", -5*60);
+
+Feeder feeder;
+TimeTriggerEvent timeTrigger([](){ feeder.Feed(); });
+MqttTriggerEvent mqttTrigger([](){ feeder.Feed(); });
+
+void setup() 
+{
+  Serial.begin(115200);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  Serial.print("Setting up WiFi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(1000);
+  }
+
+  ntpClient.begin();
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-  digitalWrite(13, HIGH);
-  delay(100);
-  digitalWrite(13, LOW);
-  delay(500);
+void loop() 
+{
+  ntpClient.update();
+  
+  mqttTrigger.Update();
+  timeTrigger.Update();
+  //feeder.Update();
 
-  // Need to confirm that this will be supported
+  // This requires a hardware setup, we'll look at it soon ...
   // ESP.deepSleep(10e6);
 }
 
