@@ -26,6 +26,7 @@ void setup()
   delay(2000);
 
   Serial.print("Setting up WiFi");
+  WiFi.setAutoConnect(true);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED)
   {
