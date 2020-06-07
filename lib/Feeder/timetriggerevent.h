@@ -13,6 +13,7 @@ public:
 
 private:
     handler_t _cb = nullptr;
-
     TimeAlarmsClass _alarm;
+
+    void OnAlarm() const;
 };

@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <TimeLib.h>
 
 #include <functional>
 #include <type_traits>
@@ -57,11 +58,22 @@ bool MqttTriggerEvent::Connect()
 void MqttTriggerEvent::PublishTopics()
 {
     // Publish the device switch configuration
-    StaticJsonDocument<512> config;
-    config["name"] = MQTT_NAME;
-    config["command_topic"] = String(topic) + "switch";
-    config["state_topic"] = String(topic) + "switch/state";
-    config["availability_topic"] = String(topic) + "switch/available";
+    StaticJsonDocument<1024> config;
+    config["name"] = MQTT_NAME " Feed";
+    config["uniq_id"] = MQTT_ID "_switch_1";
+    config["cmd_t"] = String(topic) + "switch";
+    config["stat_t"] = String(topic) + "switch/state";
+    config["avty_t"] = String(topic) + "switch/available";
+    config["device"]["ids"][0] = MQTT_ID;
+
+    auto cnsArr = config["device"]["cns"].createNestedArray();
+    cnsArr.add("mac");
+    cnsArr.add(WiFi.macAddress());
+
+    config["device"]["name"] = MQTT_NAME;
+    config["device"]["mf"] = "Clifford Roche";
+    config["device"]["mdl"] = "MM Mk 1";
+    config["device"]["sw"] = VERSION;
 
     String configJson;
     //serializeJson(config, Serial);
@@ -105,6 +117,11 @@ void MqttTriggerEvent::OnMqttMessage(String& topic, String& payload)
     Serial.println("MQTT trigger message: " + topic + " - " + payload);
     if (topic.endsWith(MQTT_NAME "/switch") && payload.equals("ON") && _cb != nullptr)
     {
+        tmElements_t elems;
+        breakTime(now(), elems);
+        String timeStr = String(monthShortStr(elems.Month)) + " " + elems.Day + " " + elems.Hour + ":" + elems.Minute + ":" + elems.Second;
+        Serial.printf("MQTT trigger: sending feed event %s\n", timeStr.c_str());
+
         _lastCbTime = millis();
         _cb();
     }
