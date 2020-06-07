@@ -10,7 +10,7 @@
 #include "callback.h"
 #include "../../include/appconfig.h"
 
-static const char* const topic = "homeassistant/switch/" MQTT_NAME "/";
+static const char* const topic = "homeassistant/switch/" MQTT_ID "_FEEDER/";
 
 MqttTriggerEvent::MqttTriggerEvent(handler_t cb)
 : _cb(cb)
@@ -60,7 +60,7 @@ void MqttTriggerEvent::PublishTopics()
     // Publish the device switch configuration
     StaticJsonDocument<1024> config;
     config["name"] = MQTT_NAME " Feed";
-    config["uniq_id"] = MQTT_ID "_switch_1";
+    config["uniq_id"] = MQTT_ID "_FEEDER";
     config["cmd_t"] = String(topic) + "switch";
     config["stat_t"] = String(topic) + "switch/state";
     config["avty_t"] = String(topic) + "switch/available";
@@ -81,7 +81,7 @@ void MqttTriggerEvent::PublishTopics()
     _mqttClient.publish(String(topic) + "config", configJson, true, 0);
 
     // Publish the current state
-    _mqttClient.publish(String(topic) + "switch/available", "online");
+    _mqttClient.publish(String(topic) + "switch/available", "online", true, 0);
     _mqttClient.publish(String(topic) + "switch", String("OFF"));
     _mqttClient.publish(String(topic) + "switch/state", String("OFF"), true, 0);
     _mqttClient.subscribe(String(topic) + "switch");
@@ -115,7 +115,7 @@ void MqttTriggerEvent::Update()
 void MqttTriggerEvent::OnMqttMessage(String& topic, String& payload)
 {
     Serial.println("MQTT trigger message: " + topic + " - " + payload);
-    if (topic.endsWith(MQTT_NAME "/switch") && payload.equals("ON") && _cb != nullptr)
+    if (topic.endsWith(MQTT_ID "_FEEDER/switch") && payload.equals("ON") && _cb != nullptr)
     {
         tmElements_t elems;
         breakTime(now(), elems);

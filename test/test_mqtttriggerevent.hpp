@@ -54,7 +54,7 @@ void should_be_available(void)
   connect_mqtt_client(client);
 
   // Join to the MQTT service and send an event
-  auto topic = String("homeassistant/switch/" MQTT_NAME "/switch/available");
+  auto topic = String("homeassistant/switch/" MQTT_ID "_FEEDER/switch/available");
   client.subscribe(topic);
 
   // Give the system time to round trip
@@ -89,7 +89,7 @@ void should_fire_event_when_triggered(void)
   connect_mqtt_client(client);
 
   // Join to the MQTT service and send an event
-  auto topic = String("homeassistant/switch/" MQTT_NAME "/switch");
+  auto topic = String("homeassistant/switch/" MQTT_ID "_FEEDER/switch");
   client.publish(topic, "ON");
 
   // Give the system time to round trip
@@ -131,7 +131,7 @@ void should_be_momentary_when_triggered(void)
   connect_mqtt_client(client);
 
   // Join to the MQTT service and send an event
-  auto topic = String("homeassistant/switch/" MQTT_NAME "/switch");
+  auto topic = String("homeassistant/switch/" MQTT_ID "_FEEDER/switch");
   client.subscribe(topic);
 
   // Give the system time to round trip
