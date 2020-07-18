@@ -7,6 +7,7 @@
 
 void process()
 {
+    SPI.begin();
     setTime(0, 0, 1, 1, 1, 2000); //h, m, s, d, m, y
 
     UNITY_BEGIN();

@@ -22,6 +22,7 @@ MqttTriggerEvent mqttTrigger([](){ feeder.Feed(); });
 
 void setup() 
 {
+  SPI.begin();
   Serial.begin(115200);
   delay(2000);
 
