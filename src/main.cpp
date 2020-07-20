@@ -1,6 +1,7 @@
 #ifndef UNIT_TEST
 
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
@@ -10,21 +11,82 @@
 #include "mqtttriggerevent.h"
 #include "feeder.h"
 
+template <class T> int EEPROM_put(int ee, const T& value)
+{
+    const byte* p = (const byte*)(const void*)&value;
+    unsigned int i;
+    for (i = 0; i < sizeof(value); i++)
+          EEPROM.write(ee++, *p++);
+    return i;
+}
+
+template <class T> int EEPROM_get(int ee, T& value)
+{
+    byte* p = (byte*)(void*)&value;
+    unsigned int i;
+    for (i = 0; i < sizeof(value); i++)
+          *p++ = EEPROM.read(ee++);
+    return i;
+}
+
+void update_feed_amount(unsigned long val);
+
 WiFiUDP udpClient;
 
 // -5H for Eastern Time, we could adjust the offset automatically in the future
 // NTPClient ntpClient(udpClient, "www.pool.ntp.org/zone/north-america", 0, 120000);
 NTPClient ntpClient(udpClient, "time.nist.gov", -4*3600, 300000);
 
+#define SAFETY_DANCE 0xDEADBEEF
+struct config_t {
+  unsigned long feedSteps = 10000;
+  unsigned long safety = SAFETY_DANCE;
+} _stored;
+
 Feeder feeder;
 TimeTriggerEvent timeTrigger([](){ feeder.Feed(); });
-MqttTriggerEvent mqttTrigger([](){ feeder.Feed(); });
+MqttTriggerEvent mqttTrigger([](){ feeder.Feed(); }, update_feed_amount);
+
+void init_eeprom()
+{
+  EEPROM.begin(sizeof(_stored));
+
+  config_t t;
+  EEPROM_get(0, t);
+
+  if (t.safety != SAFETY_DANCE)
+  {
+    Serial.println("Reinitializing EEPROM");
+    EEPROM_put(0, _stored);
+  }
+  else
+  {
+    Serial.println("EEPROM loaded");
+    _stored = t;
+  }
+
+  Serial.print("Feed steps: "); Serial.println(_stored.feedSteps, DEC);
+  Serial.print("Safety dance: "); Serial.println(_stored.safety, HEX);
+  feeder.SetFeedSteps(_stored.feedSteps);
+}
+
+void update_feed_amount(unsigned long val)
+{
+  _stored.feedSteps = val;
+  EEPROM_put(0, _stored);
+  EEPROM.commit();
+
+  Serial.println("EEPROM saved");
+  ESP.restart();
+}
 
 void setup() 
 {
   SPI.begin();
   Serial.begin(115200);
   delay(2000);
+
+  init_eeprom();
 
   Serial.print("Setting up WiFi");
   WiFi.setAutoConnect(true);
@@ -61,6 +123,9 @@ void setup()
 
   setSyncProvider([]() -> time_t { return ntpClient.getEpochTime(); });
   setSyncInterval((time_t)60UL);
+
+  // Init the feeder drivers
+  feeder.InitDriver();
 }
 
 void loop() 
@@ -68,7 +133,6 @@ void loop()
   ntpClient.update(); 
   mqttTrigger.Update();
   timeTrigger.Update();
-  //feeder.Update();
 
   // This requires a hardware setup, we'll look at it soon ...
   // ESP.deepSleep(10e6);

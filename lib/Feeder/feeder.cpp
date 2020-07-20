@@ -25,13 +25,15 @@ void Feeder::Feed()
     ++_feedCount;
 
     digitalWrite(EN_PIN, LOW);
-    for(int i = 0; i < 10000; ++i)
+    for(unsigned long i = 0; i < _feedSteps; ++i)
     {
         digitalWrite(STEP_PIN, HIGH);
         delayMicroseconds(100);
         digitalWrite(STEP_PIN, LOW);
         delayMicroseconds(100);
+        yield();
     }
+    ValidateDriverStatus();
     digitalWrite(EN_PIN, HIGH);
 }
 
@@ -53,6 +55,7 @@ void Feeder::InitDriver()
     _stepper.pwm_autoscale(true);
 
     digitalWrite(EN_PIN, HIGH);
+    ValidateDriverStatus();
 }
 
 bool Feeder::ValidateDriverStatus()

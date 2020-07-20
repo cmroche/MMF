@@ -12,8 +12,9 @@
 
 static const char* const topic = "homeassistant/switch/" MQTT_ID "_FEEDER/";
 
-MqttTriggerEvent::MqttTriggerEvent(handler_t cb)
-: _cb(cb)
+MqttTriggerEvent::MqttTriggerEvent(handler_t cb, qty_handler_t qty_cb)
+: _qty_cb(qty_cb)
+, _cb(cb)
 , _mqttClient(1024)
 {
     _mqttClient.begin(MQTT_HOST, _netClient);
@@ -21,7 +22,6 @@ MqttTriggerEvent::MqttTriggerEvent(handler_t cb)
 
     auto handler = GETCB(MQTTClientCallbackSimple, MqttTriggerEvent)(std::bind(&MqttTriggerEvent::OnMqttMessage, this, std::placeholders::_1, std::placeholders::_2));
     _mqttClient.onMessage(handler);
-    //_mqttClient.setClockSource(ntpClockSource);
 }
 
 MqttTriggerEvent::~MqttTriggerEvent()
@@ -85,6 +85,7 @@ void MqttTriggerEvent::PublishTopics()
     _mqttClient.publish(String(topic) + "switch", String("OFF"));
     _mqttClient.publish(String(topic) + "switch/state", String("OFF"), true, 0);
     _mqttClient.subscribe(String(topic) + "switch");
+    _mqttClient.subscribe(String(topic) + "switch/amount");
 }
 
 void MqttTriggerEvent::Disconnect()
@@ -123,6 +124,22 @@ void MqttTriggerEvent::OnMqttMessage(String& topic, String& payload)
         Serial.printf("MQTT trigger: sending feed event %s\n", timeStr.c_str());
 
         _lastCbTime = millis();
-        _cb();
+
+        if (_cb != nullptr)
+            _cb();
+    }
+
+    else if (topic.endsWith(MQTT_ID "_FEEDER/switch/amount"))
+    {
+        Serial.printf("MQTT trigger: sending new feed amount %s\n", payload.c_str());
+        long newVal = payload.toInt();
+        if (newVal <= 0)
+        {
+            Serial.printf("MQTT trigger: received invalid amount, ignoring");
+            return;
+        }
+
+        if (_qty_cb != nullptr)
+            _qty_cb((unsigned long)newVal);
     }
 }

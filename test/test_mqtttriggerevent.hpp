@@ -33,7 +33,7 @@ void connect_mqtt_client(MQTTClient &client)
 
 void should_be_available(void)
 {
-  MqttTriggerEvent e(nullptr);
+  MqttTriggerEvent e(nullptr, nullptr);
   struct MqttHandler_t
   {
     bool available = false;
@@ -80,7 +80,7 @@ void should_fire_event_when_triggered(void)
   } Handler;
   auto handler = GETCB(MqttTriggerEvent::handler_t, Handler_t)(std::bind(&Handler_t::cb, &Handler));
 
-  MqttTriggerEvent e(handler);
+  MqttTriggerEvent e(handler, nullptr);
   e.Update(); // update loop checks and handles connection
 
   WiFiClient net;
@@ -108,7 +108,7 @@ void should_fire_event_when_triggered(void)
 
 void should_be_momentary_when_triggered(void)
 {
-  MqttTriggerEvent e(nullptr);
+  MqttTriggerEvent e(nullptr, nullptr);
   struct MqttHandler_t
   {
     bool fired = false;
