@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
+#include <ElegantOTA.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
@@ -35,8 +37,9 @@ WiFiUDP udpClient;
 
 // -5H for Eastern Time, we could adjust the offset automatically in the future
 // NTPClient ntpClient(udpClient, "www.pool.ntp.org/zone/north-america", 0, 120000);
-NTPClient ntpClient(udpClient, "time.nist.gov", -4*3600, 300000);
-bool timeSynced = false;
+NTPClient ntpClient(udpClient, "time.nist.gov", -4*3600, 120000);
+
+ESP8266WebServer server(80);
 
 #define SAFETY_DANCE 0xDEADBEEF
 struct config_t {
@@ -107,18 +110,8 @@ void init_ntp()
     delay(1000);
   }
 
-  setSyncProvider([]() -> time_t 
-  { 
-    if (timeSynced)
-    {
-      timeSynced = false;
-      return ntpClient.getEpochTime(); 
-    }
-
-    return 0;
-  });
-
-  setSyncInterval((time_t)60UL);
+  setSyncProvider([]() -> time_t { return ntpClient.getEpochTime(); });
+  setSyncInterval((time_t)120UL);
 }
 
 void setup() 
@@ -139,6 +132,20 @@ void setup()
     delay(1000);
   }
 
+  Serial.println("Starting MDNS");
+  if (!MDNS.begin(MQTT_ID))
+  {
+    Serial.println("Unable to setup MDNS responder");
+  }
+  
+  Serial.println("Starting HTTP OTA service");
+  server.on("/", []() {
+    server.send(200, "text/plain", "Meow meow meow meow meow meow meow meow meow meow.");
+  });
+
+  ElegantOTA.begin(&server);
+  server.begin();
+
   init_ntp();
 
   // Init the feeder drivers
@@ -148,9 +155,12 @@ void setup()
 
 void loop() 
 {
-  timeSynced |= ntpClient.update(); 
+  MDNS.update();
+  ntpClient.update(); 
   mqttTrigger.Update();
   timeTrigger.Update();
+
+  server.handleClient();
 
   // This requires a hardware setup, we'll look at it soon ...
   // ESP.deepSleep(10e6);
