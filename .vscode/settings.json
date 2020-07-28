@@ -49,6 +49,9 @@
         "typeinfo": "cpp",
         "utility": "cpp",
         "valarray": "cpp",
-        "vector": "cpp"
-    }
+        "vector": "cpp",
+        "*.tcc": "cpp",
+        "fstream": "cpp"
+    },
+    "cmake.configureOnOpen": false
 }

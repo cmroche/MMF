@@ -15,5 +15,7 @@ private:
     handler_t _cb = nullptr;
     TimeAlarmsClass _alarm;
 
+    bool _alarmsRegistered = false;
+
     void OnAlarm() const;
 };

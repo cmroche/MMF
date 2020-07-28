@@ -36,6 +36,7 @@ WiFiUDP udpClient;
 // -5H for Eastern Time, we could adjust the offset automatically in the future
 // NTPClient ntpClient(udpClient, "www.pool.ntp.org/zone/north-america", 0, 120000);
 NTPClient ntpClient(udpClient, "time.nist.gov", -4*3600, 300000);
+bool timeSynced = false;
 
 #define SAFETY_DANCE 0xDEADBEEF
 struct config_t {
@@ -80,23 +81,8 @@ void update_feed_amount(unsigned long val)
   ESP.restart();
 }
 
-void setup() 
+void init_ntp()
 {
-  SPI.begin();
-  Serial.begin(115200);
-  delay(2000);
-
-  init_eeprom();
-
-  Serial.print("Setting up WiFi");
-  WiFi.setAutoConnect(true);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(1000);
-  }
-
   Serial.print("\nSetting up NTP");
   ntpClient.begin();
 
@@ -118,19 +104,51 @@ void setup()
       }
     }
     
-    yield();
+    delay(1000);
   }
 
-  setSyncProvider([]() -> time_t { return ntpClient.getEpochTime(); });
+  setSyncProvider([]() -> time_t 
+  { 
+    if (timeSynced)
+    {
+      timeSynced = false;
+      return ntpClient.getEpochTime(); 
+    }
+
+    return 0;
+  });
+
   setSyncInterval((time_t)60UL);
+}
+
+void setup() 
+{
+  SPI.begin();
+  Serial.begin(115200);
+  delay(2000);
+
+  init_eeprom();
+
+  Serial.print("Setting up WiFi");
+  WiFi.setAutoConnect(true);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(1000);
+  }
+
+  init_ntp();
 
   // Init the feeder drivers
+  Serial.print("Initializing drivers");
   feeder.InitDriver();
 }
 
 void loop() 
 {
-  ntpClient.update(); 
+  timeSynced |= ntpClient.update(); 
   mqttTrigger.Update();
   timeTrigger.Update();
 

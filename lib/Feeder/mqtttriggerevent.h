@@ -14,7 +14,7 @@ public:
 
     MqttTriggerEvent(const MqttTriggerEvent&) = delete;
     MqttTriggerEvent& operator=(const MqttTriggerEvent&) = delete;
- 
+
     void Update();
 
 private:

@@ -41,7 +41,9 @@ bool MqttTriggerEvent::Connect()
     Serial.print("\nMQTT trigger connecting");
     for (auto i = 0u; i < 60; ++i) 
     {
-        if (_mqttClient.connect(MQTT_NAME, MQTT_USER, MQTT_PASSWORD))
+        delay(5000); // Rate limit connection attempts
+
+        if (_mqttClient.connect(MQTT_ID, MQTT_USER, MQTT_PASSWORD))
         {
             Serial.println("\nMQTT trigger client connected!");
             PublishTopics();
@@ -49,7 +51,6 @@ bool MqttTriggerEvent::Connect()
         }
 
         Serial.print(".");
-        delay(1000);
     }
 
     return false;
