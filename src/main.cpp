@@ -13,22 +13,24 @@
 #include "mqtttriggerevent.h"
 #include "feeder.h"
 
-template <class T> int EEPROM_put(int ee, const T& value)
+template <class T>
+int EEPROM_put(int ee, const T &value)
 {
-    const byte* p = (const byte*)(const void*)&value;
-    unsigned int i;
-    for (i = 0; i < sizeof(value); i++)
-          EEPROM.write(ee++, *p++);
-    return i;
+  const byte *p = (const byte *)(const void *)&value;
+  unsigned int i;
+  for (i = 0; i < sizeof(value); i++)
+    EEPROM.write(ee++, *p++);
+  return i;
 }
 
-template <class T> int EEPROM_get(int ee, T& value)
+template <class T>
+int EEPROM_get(int ee, T &value)
 {
-    byte* p = (byte*)(void*)&value;
-    unsigned int i;
-    for (i = 0; i < sizeof(value); i++)
-          *p++ = EEPROM.read(ee++);
-    return i;
+  byte *p = (byte *)(void *)&value;
+  unsigned int i;
+  for (i = 0; i < sizeof(value); i++)
+    *p++ = EEPROM.read(ee++);
+  return i;
 }
 
 void update_feed_amount(unsigned long val);
@@ -37,19 +39,20 @@ WiFiUDP udpClient;
 
 // -5H for Eastern Time, we could adjust the offset automatically in the future
 // NTPClient ntpClient(udpClient, "www.pool.ntp.org/zone/north-america", 0, 120000);
-NTPClient ntpClient(udpClient, "time.nist.gov", -4*3600, 120000);
+NTPClient ntpClient(udpClient, "time.nist.gov", -4 * 3600, 120000);
 
 ESP8266WebServer server(80);
 
 #define SAFETY_DANCE 0xDEADBEEF
-struct config_t {
-  unsigned long feedSteps = 10000;
+struct config_t
+{
+  unsigned long feedSteps = 50000;
   unsigned long safety = SAFETY_DANCE;
 } _stored;
 
 Feeder feeder;
-TimeTriggerEvent timeTrigger([](){ feeder.Feed(); });
-MqttTriggerEvent mqttTrigger([](){ feeder.Feed(); }, update_feed_amount);
+TimeTriggerEvent timeTrigger([]() { feeder.Feed(); });
+MqttTriggerEvent mqttTrigger([]() { feeder.Feed(); }, update_feed_amount);
 
 void init_eeprom()
 {
@@ -69,8 +72,10 @@ void init_eeprom()
     _stored = t;
   }
 
-  Serial.print("Feed steps: "); Serial.println(_stored.feedSteps, DEC);
-  Serial.print("Safety dance: "); Serial.println(_stored.safety, HEX);
+  Serial.print("Feed steps: ");
+  Serial.println(_stored.feedSteps, DEC);
+  Serial.print("Safety dance: ");
+  Serial.println(_stored.safety, HEX);
   feeder.SetFeedSteps(_stored.feedSteps);
 }
 
@@ -106,7 +111,7 @@ void init_ntp()
         break;
       }
     }
-    
+
     delay(1000);
   }
 
@@ -114,7 +119,7 @@ void init_ntp()
   setSyncInterval((time_t)120UL);
 }
 
-void setup() 
+void setup()
 {
   SPI.begin();
   Serial.begin(115200);
@@ -133,11 +138,12 @@ void setup()
   }
 
   Serial.println("Starting MDNS");
-  if (!MDNS.begin(MQTT_ID))
+  String clientId = String("MMF-") + String(ESP.getChipId(), HEX);
+  if (!MDNS.begin(clientId))
   {
     Serial.println("Unable to setup MDNS responder");
   }
-  
+
   Serial.println("Starting HTTP OTA service");
   server.on("/", []() {
     server.send(200, "text/plain", "Meow meow meow meow meow meow meow meow meow meow.");
@@ -153,10 +159,10 @@ void setup()
   feeder.InitDriver();
 }
 
-void loop() 
+void loop()
 {
   MDNS.update();
-  ntpClient.update(); 
+  ntpClient.update();
   mqttTrigger.Update();
   timeTrigger.Update();
 

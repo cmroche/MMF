@@ -12,6 +12,12 @@
 
 #include "test_util.hpp"
 
+const String getClientId()
+{
+  String clientId = "MMF-" + String(ESP.getChipId(), HEX);
+  return clientId;
+}
+
 void connect_mqtt_client(MQTTClient &client)
 {
   Serial.print("MQTT test checking wifi");
@@ -33,6 +39,7 @@ void connect_mqtt_client(MQTTClient &client)
 
 void should_be_available(void)
 {
+  String clientId = getClientId();
   MqttTriggerEvent e(nullptr, nullptr);
   struct MqttHandler_t
   {
@@ -54,7 +61,7 @@ void should_be_available(void)
   connect_mqtt_client(client);
 
   // Join to the MQTT service and send an event
-  auto topic = String("homeassistant/switch/" MQTT_ID "_FEEDER/switch/available");
+  auto topic = String("homeassistant/switch/") + clientId + String("_FEEDER/switch/available");
   client.subscribe(topic);
 
   // Give the system time to round trip
@@ -73,6 +80,8 @@ void should_be_available(void)
 
 void should_fire_event_when_triggered(void)
 {
+  String clientId = getClientId();
+
   struct Handler_t
   {
     bool fire = false;
@@ -89,7 +98,7 @@ void should_fire_event_when_triggered(void)
   connect_mqtt_client(client);
 
   // Join to the MQTT service and send an event
-  auto topic = String("homeassistant/switch/" MQTT_ID "_FEEDER/switch");
+  auto topic = String("homeassistant/switch/") + clientId + String("_FEEDER/switch");
   client.publish(topic, "ON");
 
   // Give the system time to round trip
@@ -108,6 +117,8 @@ void should_fire_event_when_triggered(void)
 
 void should_be_momentary_when_triggered(void)
 {
+  String clientId = getClientId();
+
   MqttTriggerEvent e(nullptr, nullptr);
   struct MqttHandler_t
   {
@@ -131,7 +142,7 @@ void should_be_momentary_when_triggered(void)
   connect_mqtt_client(client);
 
   // Join to the MQTT service and send an event
-  auto topic = String("homeassistant/switch/" MQTT_ID "_FEEDER/switch");
+  auto topic = String("homeassistant/switch/") + clientId + String("_FEEDER/switch");
   client.subscribe(topic);
 
   // Give the system time to round trip
@@ -157,4 +168,5 @@ void RUN_MQTTTRIGGEREVENT_TESTS()
   RUN_TEST(should_be_available);
   RUN_TEST(should_fire_event_when_triggered);
   RUN_TEST(should_be_momentary_when_triggered);
-;}
+  ;
+}

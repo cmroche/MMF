@@ -5,6 +5,10 @@
 
 class MqttTriggerEvent
 {
+private:
+    String _clientId;
+    String _baseTopic;
+
 public:
     typedef void (*handler_t)();
     typedef void (*qty_handler_t)(unsigned long);
@@ -12,9 +16,10 @@ public:
     MqttTriggerEvent(handler_t cb, qty_handler_t qty_cb);
     ~MqttTriggerEvent();
 
-    MqttTriggerEvent(const MqttTriggerEvent&) = delete;
-    MqttTriggerEvent& operator=(const MqttTriggerEvent&) = delete;
+    MqttTriggerEvent(const MqttTriggerEvent &) = delete;
+    MqttTriggerEvent &operator=(const MqttTriggerEvent &) = delete;
 
+    void SetClientId(String &clientId);
     void Update();
 
 private:
@@ -29,5 +34,5 @@ private:
     void Disconnect();
 
     void PublishTopics();
-    void OnMqttMessage(String& topic, String& payload);
+    void OnMqttMessage(String &topic, String &payload);
 };

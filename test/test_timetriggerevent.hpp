@@ -9,7 +9,7 @@
 
 #include "test_util.hpp"
 
-void should_fire_event_when_ticked(void) 
+void should_fire_event_when_ticked(void)
 {
     RESET_TIME;
 
@@ -34,7 +34,7 @@ void should_fire_event_when_ticked(void)
     TEST_ASSERT_TRUE(Handler.fire);
 }
 
-void should_keep_firing_events_when_ticked(void) 
+void should_keep_firing_events_when_ticked(void)
 {
     RESET_TIME;
 
@@ -49,7 +49,7 @@ void should_keep_firing_events_when_ticked(void)
 
     auto handler = GETCB(TimeTriggerEvent::handler_t, Handler_t)(std::bind(&Handler_t::cb, &Handler));
     TimeTriggerEvent te(handler);
-    
+
     SET_MORNING_TRIGGER_TIME;
 
     te.Update();
@@ -61,9 +61,38 @@ void should_keep_firing_events_when_ticked(void)
     TEST_ASSERT_TRUE(Handler.fire);
 }
 
+void should_keep_firing_events_when_ticked_for_days(void)
+{
+    RESET_TIME;
+
+    struct Handler_t
+    {
+        bool fire = false;
+        void cb()
+        {
+            fire = true;
+        }
+    } Handler;
+
+    auto handler = GETCB(TimeTriggerEvent::handler_t, Handler_t)(std::bind(&Handler_t::cb, &Handler));
+    TimeTriggerEvent te(handler);
+
+    SET_MORNING_TRIGGER_TIME;
+
+    const int TEST_HOURS = 720;
+    for (auto i = 0; i < TEST_HOURS; ++i)
+    {
+        adjustTime(60 * 60);
+        te.Update();
+        TEST_ASSERT_TRUE(Handler.fire);
+        Handler.fire = false;
+    }
+}
+
 void RUN_TIMETRIGGEREVENT_TESTS()
 {
     Serial.write("Start TimeTriggerEvent unit tests\n");
     RUN_TEST(should_fire_event_when_ticked);
     RUN_TEST(should_keep_firing_events_when_ticked);
+    RUN_TEST(should_keep_firing_events_when_ticked_for_days);
 }
