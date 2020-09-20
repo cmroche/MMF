@@ -19,7 +19,7 @@ MqttTriggerEvent::MqttTriggerEvent(handler_t cb, qty_handler_t qty_cb)
     auto handler = GETCB(MQTTClientCallbackSimple, MqttTriggerEvent)(std::bind(&MqttTriggerEvent::OnMqttMessage, this, std::placeholders::_1, std::placeholders::_2));
     _mqttClient.onMessage(handler);
 
-    String clientId = "MMF-";
+    String clientId = "MMF";
     clientId += String(ESP.getChipId(), HEX);
     SetClientId(clientId);
 }
@@ -44,7 +44,8 @@ bool MqttTriggerEvent::Connect()
         delay(1000);
     }
 
-    Serial.print("\nMQTT trigger connecting");
+    Serial.print("\nMQTT trigger connecting with client ");
+    Serial.print(_clientId);
     for (auto i = 0u; i < 60; ++i)
     {
         delay(5000); // Rate limit connection attempts
@@ -64,6 +65,8 @@ bool MqttTriggerEvent::Connect()
 
 void MqttTriggerEvent::PublishTopics()
 {
+    Serial.print("\nMQTT publishing topics");
+
     // Publish the device switch configuration
     StaticJsonDocument<1024> config;
     config["name"] = MQTT_NAME " Feed";
@@ -82,10 +85,14 @@ void MqttTriggerEvent::PublishTopics()
     config["device"]["mdl"] = "MM Mk 1";
     config["device"]["sw"] = VERSION;
 
+    Serial.print("\nMQTT publishing topics - config");
+
     String configJson;
     //serializeJson(config, Serial);
     serializeJson(config, configJson);
     _mqttClient.publish(_baseTopic + "config", configJson, true, 0);
+
+    Serial.print("\nMQTT publishing topics - current state");
 
     // Publish the current state
     _mqttClient.publish(_baseTopic + "switch/available", "online", true, 0);
@@ -95,18 +102,21 @@ void MqttTriggerEvent::PublishTopics()
     _mqttClient.subscribe(_baseTopic + "switch/amount");
 
     // Diagnostic information
-    auto rInfo = ESP.getResetInfoPtr();
-    StaticJsonDocument<1024> rstInfo;
-    rstInfo["reason"] = rInfo->reason;
-    rstInfo["exccause"] = rInfo->exccause;
-    rstInfo["epc1"] = rInfo->epc1;
-    rstInfo["epc2"] = rInfo->epc2;
-    rstInfo["epc3"] = rInfo->epc3;
-    rstInfo["excvaddr"] = String("0x") + String(rInfo->excvaddr, HEX);
-    rstInfo["depc"] = rInfo->depc;
-    String rstPayload;
-    serializeJson(rstInfo, rstPayload);
-    _mqttClient.publish(_baseTopic + "switch/reset", rstPayload, true, 0);
+    // auto rInfo = ESP.getResetInfoPtr();
+    // StaticJsonDocument<1024> rstInfo;
+    // rstInfo["reason"] = rInfo->reason;
+    // rstInfo["exccause"] = rInfo->exccause;
+    // rstInfo["epc1"] = rInfo->epc1;
+    // rstInfo["epc2"] = rInfo->epc2;
+    // rstInfo["epc3"] = rInfo->epc3;
+    // rstInfo["excvaddr"] = String("0x") + String(rInfo->excvaddr, HEX);
+    // rstInfo["depc"] = rInfo->depc;
+
+    // Serial.print("\nMQTT publishing topics - diagnostic");
+
+    // String rstPayload;
+    // serializeJson(rstInfo, rstPayload);
+    // _mqttClient.publish(_baseTopic + "switch/reset", rstPayload, true, 0);
 }
 
 void MqttTriggerEvent::Disconnect()

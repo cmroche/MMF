@@ -51,7 +51,6 @@ struct config_t
 } _stored;
 
 Feeder feeder;
-TimeTriggerEvent timeTrigger([]() { feeder.Feed(); });
 MqttTriggerEvent mqttTrigger([]() { feeder.Feed(); }, update_feed_amount);
 
 void init_eeprom()
@@ -162,14 +161,10 @@ void setup()
 void loop()
 {
   MDNS.update();
-  ntpClient.update();
+  //ntpClient.update();
   mqttTrigger.Update();
-  timeTrigger.Update();
 
   server.handleClient();
-
-  // This requires a hardware setup, we'll look at it soon ...
-  // ESP.deepSleep(10e6);
 }
 
 #endif
