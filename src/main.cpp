@@ -83,9 +83,9 @@ void update_feed_amount(unsigned long val)
   _stored.feedSteps = val;
   EEPROM_put(0, _stored);
   EEPROM.commit();
-
   Serial.println("EEPROM saved");
-  ESP.restart();
+
+  feeder.SetFeedSteps(val);
 }
 
 void init_ntp()
@@ -156,6 +156,7 @@ void setup()
   // Init the feeder drivers
   Serial.print("Initializing drivers");
   feeder.InitDriver();
+  mqttTrigger.SetAmount(feeder.GetFeedSteps());
 }
 
 void loop()

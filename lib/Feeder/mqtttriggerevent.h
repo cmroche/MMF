@@ -20,12 +20,16 @@ public:
     MqttTriggerEvent &operator=(const MqttTriggerEvent &) = delete;
 
     void SetClientId(String &clientId);
+    void SetAmount(unsigned long);
     void Update();
 
 private:
     qty_handler_t _qty_cb = nullptr;
     handler_t _cb = nullptr;
     unsigned long _lastCbTime = 0;
+
+    unsigned long _lastAmount = 0;
+    bool _amountDirty = false;
 
     WiFiClient _netClient;
     MQTTClient _mqttClient;

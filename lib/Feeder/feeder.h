@@ -15,6 +15,7 @@ public:
     void Feed();
     unsigned long GetFeedCount() const { return _feedCount; }
     void SetFeedSteps(unsigned long steps) { _feedSteps = steps; }
+    unsigned long GetFeedSteps() const { return _feedSteps; }
 
     void InitDriver();
     bool ValidateDriverStatus();

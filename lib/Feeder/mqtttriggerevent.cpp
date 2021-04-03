@@ -35,6 +35,12 @@ void MqttTriggerEvent::SetClientId(String &clientId)
     _baseTopic = String("homeassistant/switch/") + _clientId + String("_FEEDER/");
 }
 
+void MqttTriggerEvent::SetAmount(unsigned long amount)
+{
+    _lastAmount = amount;
+    _amountDirty = true;
+}
+
 bool MqttTriggerEvent::Connect()
 {
     Serial.print("MQTT trigger checking wifi");
@@ -139,6 +145,12 @@ void MqttTriggerEvent::Update()
         _mqttClient.publish(_baseTopic + "switch/state", "OFF", true, 0);
     }
 
+    if (_amountDirty)
+    {
+        _amountDirty = false;
+        _mqttClient.publish(_baseTopic + "switch/amount", String(_lastAmount), true, 0);
+    }
+
     auto lastError = _mqttClient.lastError();
     if (lastError != 0)
         Serial.println(String("MQTT last error: ") + _mqttClient.lastError());
@@ -162,7 +174,6 @@ void MqttTriggerEvent::OnMqttMessage(String &topic, String &payload)
 
     else if (topic.endsWith(_clientId + "_FEEDER/switch/amount"))
     {
-        Serial.printf("MQTT trigger: sending new feed amount %s\n", payload.c_str());
         long newVal = payload.toInt();
         if (newVal <= 0)
         {
@@ -170,7 +181,11 @@ void MqttTriggerEvent::OnMqttMessage(String &topic, String &payload)
             return;
         }
 
-        if (_qty_cb != nullptr)
+        if ((unsigned long)newVal != _lastAmount && _qty_cb != nullptr)
+        {
+            Serial.printf("MQTT trigger: sending new feed amount %s\n", payload.c_str());
+            _lastAmount = (unsigned long)newVal;
             _qty_cb((unsigned long)newVal);
+        }
     }
 }
