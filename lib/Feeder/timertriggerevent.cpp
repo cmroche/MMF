@@ -9,9 +9,8 @@
 #include <functional>
 
 TimeTriggerEvent::TimeTriggerEvent(handler_t cb)
-: _cb(cb)
+    : _cb(cb)
 {
-    
 }
 
 void TimeTriggerEvent::Update()
@@ -21,6 +20,7 @@ void TimeTriggerEvent::Update()
         _alarmsRegistered = true;
         auto handler = GETCB(OnTick_t, TimeTriggerEvent)(std::bind(&TimeTriggerEvent::OnAlarm, this));
         _alarm.alarmRepeat(8, 0, 0, handler);
+        _alarm.alarmRepeat(13, 0, 0, handler);
         _alarm.alarmRepeat(18, 0, 0, handler);
     }
 
@@ -33,6 +33,7 @@ void TimeTriggerEvent::OnAlarm() const
     breakTime(now(), elems);
     String timeStr = String(monthShortStr(elems.Month)) + " " + elems.Day + " " + elems.Hour + ":" + elems.Minute + ":" + elems.Second;
     Serial.printf("Timer trigger: sending feed event %s\n", timeStr.c_str());
-    
-    if (_cb != nullptr) _cb();
+
+    if (_cb != nullptr)
+        _cb();
 }

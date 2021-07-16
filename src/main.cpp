@@ -6,11 +6,13 @@
 #include <ESP8266mDNS.h>
 #include <ElegantOTA.h>
 #include <WiFiUdp.h>
-#include <NTPClient.h>
+//#include <NTPClient.h>
+//#include <TimeLib.h>
+
+#include <time.h>
 
 #include "appconfig.h"
 #include "timetriggerevent.h"
-#include "mqtttriggerevent.h"
 #include "feeder.h"
 
 template <class T>
@@ -33,13 +35,12 @@ int EEPROM_get(int ee, T &value)
   return i;
 }
 
-void update_feed_amount(unsigned long val);
-
 WiFiUDP udpClient;
 
 // -5H for Eastern Time, we could adjust the offset automatically in the future
-// NTPClient ntpClient(udpClient, "www.pool.ntp.org/zone/north-america", 0, 120000);
-NTPClient ntpClient(udpClient, "time.nist.gov", -4 * 3600, 120000);
+// NTPClient ntpClient(udpClient, "north-america.pool.ntp.org", 0, 120000);
+//NTPClient ntpClient(udpClient, "time.nist.gov", -4 * 3600, 120000);
+//NTPClient ntpClient(udpClient, "pool.ntp.org", -4 * 3600, 60000);
 
 ESP8266WebServer server(80);
 
@@ -51,7 +52,8 @@ struct config_t
 } _stored;
 
 Feeder feeder;
-MqttTriggerEvent mqttTrigger([]() { feeder.Feed(); }, update_feed_amount);
+TimeTriggerEvent timeTrigger([]()
+                             { feeder.Feed(); });
 
 void init_eeprom()
 {
@@ -78,44 +80,31 @@ void init_eeprom()
   feeder.SetFeedSteps(_stored.feedSteps);
 }
 
-void update_feed_amount(unsigned long val)
-{
-  _stored.feedSteps = val;
-  EEPROM_put(0, _stored);
-  EEPROM.commit();
-  Serial.println("EEPROM saved");
-
-  feeder.SetFeedSteps(val);
-}
-
 void init_ntp()
 {
   Serial.print("\nSetting up NTP");
-  ntpClient.begin();
+  configTime(0, 0, "pool.ntp.org");
+  setenv("TZ", "AST4ADT,M3.2.0,M11.1.0", 0);
 
-  auto start = millis();
-  while (true)
+  time_t now = 0;
+  const int EPOCH_1_1_2019 = 1546300800;
+  while (now < EPOCH_1_1_2019)
   {
-    if (millis() - start > 65000)
-    {
-      start = millis();
-      Serial.print(".");
-      if (ntpClient.update())
-      {
-        tmElements_t ntpElemTime;
-        breakTime(ntpClient.getEpochTime(), ntpElemTime);
-
-        String ntpStr = String(monthShortStr(ntpElemTime.Month)) + " " + ntpElemTime.Day + " " + ntpElemTime.Hour + ":" + ntpElemTime.Minute + ":" + ntpElemTime.Second;
-        Serial.printf("\nSynchronized time with NTP %s\n", ntpStr.c_str());
-        break;
-      }
-    }
-
-    delay(1000);
+    now = time(nullptr);
+    delay(500);
+    Serial.print(".");
   }
 
-  setSyncProvider([]() -> time_t { return ntpClient.getEpochTime(); });
-  setSyncInterval((time_t)120UL);
+  Serial.print("\nSystem time is set: ");
+  Serial.println(String(ctime(&now)));
+
+  setSyncProvider([]()
+                  {
+                    time_t tnow = time(nullptr);
+                    Serial.print("\nSynchronizing system time: ");
+                    Serial.println(String(ctime(&tnow)));
+                    return tnow;
+                  });
 }
 
 void setup()
@@ -136,36 +125,39 @@ void setup()
     delay(1000);
   }
 
-  Serial.println("Starting MDNS");
   String clientId = String("MMF-") + String(ESP.getChipId(), HEX);
+  Serial.print("Starting MDNS, client name ");
+  Serial.println(clientId);
   if (!MDNS.begin(clientId))
   {
     Serial.println("Unable to setup MDNS responder");
   }
 
   Serial.println("Starting HTTP OTA service");
-  server.on("/", []() {
-    server.send(200, "text/plain", "Meow meow meow meow meow meow meow meow meow meow.");
-  });
+  server.on("/", []()
+            { server.send(200, "text/plain", "Meow meow meow meow meow meow meow meow meow meow."); });
 
   ElegantOTA.begin(&server);
   server.begin();
 
   init_ntp();
 
+  // Sanity check
+  if (timeStatus() == timeNotSet)
+  {
+    Serial.println("System time is not set, the timers will be disabled!");
+  }
+
   // Init the feeder drivers
-  Serial.print("Initializing drivers");
+  Serial.print("\nInitializing drivers");
   feeder.InitDriver();
-  mqttTrigger.SetAmount(feeder.GetFeedSteps());
 }
 
 void loop()
 {
   MDNS.update();
-  //ntpClient.update();
-  mqttTrigger.Update();
-
   server.handleClient();
+  timeTrigger.Update();
 }
 
 #endif

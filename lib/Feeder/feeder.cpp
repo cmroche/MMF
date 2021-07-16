@@ -63,7 +63,7 @@ bool Feeder::ValidateDriverStatus()
     DRV_STATUS_t drv_status{0};
     drv_status.sr = _stepper.DRV_STATUS();
 
-    Serial.println("DRIVER STATUS");
+    Serial.println("\nDRIVER STATUS");
     Serial.print("Registers: ");
     Serial.println(drv_status.sr, HEX);
     Serial.printf("Temp: %x\n", drv_status.ot);
