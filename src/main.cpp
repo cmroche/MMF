@@ -5,9 +5,8 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ElegantOTA.h>
+#include <TimeLib.h>
 #include <WiFiUdp.h>
-//#include <NTPClient.h>
-//#include <TimeLib.h>
 
 #include <time.h>
 
@@ -103,7 +102,17 @@ void init_ntp()
                     time_t tnow = time(nullptr);
                     Serial.print("\nSynchronizing system time: ");
                     Serial.println(String(ctime(&tnow)));
-                    return tnow;
+
+                    tm *tm = localtime(&tnow);
+                    tmElements_t tmElems;
+                    tmElems.Year = tm->tm_year - 70;
+                    tmElems.Month = tm->tm_mon + 1;
+                    tmElems.Day = tm->tm_mday;
+                    tmElems.Hour = tm->tm_hour;
+                    tmElems.Minute = tm->tm_min;
+                    tmElems.Second = tm->tm_sec;
+                    time_t lnow = makeTime(tmElems);
+                    return lnow;
                   });
 }
 
