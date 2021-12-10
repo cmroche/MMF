@@ -4,7 +4,9 @@
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
-#include <ElegantOTA.h>
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
 #include <TimeLib.h>
 #include <WiFiUdp.h>
 
@@ -13,6 +15,7 @@
 #include "appconfig.h"
 #include "timetriggerevent.h"
 #include "feeder.h"
+#include "webform.hpp"
 
 template <class T>
 int EEPROM_put(int ee, const T &value)
@@ -35,13 +38,7 @@ int EEPROM_get(int ee, T &value)
 }
 
 WiFiUDP udpClient;
-
-// -5H for Eastern Time, we could adjust the offset automatically in the future
-// NTPClient ntpClient(udpClient, "north-america.pool.ntp.org", 0, 120000);
-//NTPClient ntpClient(udpClient, "time.nist.gov", -4 * 3600, 120000);
-//NTPClient ntpClient(udpClient, "pool.ntp.org", -4 * 3600, 60000);
-
-ESP8266WebServer server(80);
+AsyncWebServer server(80);
 
 #define SAFETY_DANCE 0xDEADBEEF
 struct config_t
@@ -83,7 +80,7 @@ void init_ntp()
 {
   Serial.print("\nSetting up NTP");
   configTime(0, 0, "pool.ntp.org");
-  setenv("TZ", "AST4ADT,M3.2.0,M11.1.0", 0);
+  setenv("TZ", "EST5EDT,M3.2.0,M11.1.0", 1);
 
   time_t now = 0;
   const int EPOCH_1_1_2019 = 1546300800;
@@ -116,6 +113,24 @@ void init_ntp()
                   });
 }
 
+// Replaces placeholder with stored values
+String processor(const String &var)
+{
+  //Serial.println(var);
+  if (var == "systemTime")
+  {
+    time_t tnow = time(nullptr);
+    return String(ctime(&tnow));
+  }
+  else if (var == "feedSteps")
+  {
+    return String(_stored.feedSteps);
+  }
+  return String();
+}
+
+bool feed = false;
+
 void setup()
 {
   SPI.begin();
@@ -141,12 +156,30 @@ void setup()
   {
     Serial.println("Unable to setup MDNS responder");
   }
+  MDNS.addService(0, "http", "tcp", 80);
 
   Serial.println("Starting HTTP OTA service");
-  server.on("/", []()
-            { server.send(200, "text/plain", "Meow meow meow meow meow meow meow meow meow meow."); });
 
-  ElegantOTA.begin(&server);
+  server.on("/", [](AsyncWebServerRequest *request)
+            { request->send_P(200, "text/html", index_html, processor); });
+  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              if (request->hasParam(PARAM_FEED_STEPS))
+              {
+                String inputMessage = request->getParam(PARAM_FEED_STEPS)->value();
+                _stored.feedSteps = atol(inputMessage.c_str());
+                feeder.SetFeedSteps(_stored.feedSteps);
+                EEPROM_put(0, _stored);
+              }
+              request->send(200, "text/text", "OK");
+            });
+  server.on("/feed", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              feed = true;
+              request->send(200, "text/text", "OK");
+            });
+
+  AsyncElegantOTA.begin(&server);
   server.begin();
 
   init_ntp();
@@ -165,8 +198,13 @@ void setup()
 void loop()
 {
   MDNS.update();
-  server.handleClient();
   timeTrigger.Update();
+
+  if (feed == true)
+  {
+    feeder.Feed();
+    feed = false;
+  }
 }
 
 #endif

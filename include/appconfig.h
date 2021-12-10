@@ -7,4 +7,4 @@ static const uint16_t STEPPER_STEPS = 200;
 static const uint8_t STEPPER_PORT = 2;
 static const uint16_t STEPPER_RPM = 30;
 
-#define VERSION "1.1.0"
+#define VERSION "1.2.0"
